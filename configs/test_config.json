@@ -1,0 +1,5 @@
+{
+    "device": "cuda:0",
+    "architecture": "TinyYOLOv2",
+    "batch_size": 1
+}
