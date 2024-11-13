@@ -170,12 +170,17 @@ class Data(Dataset):
             value=(0, 0, 0)  # Padding color: black
         )
 
-        grid_size = 8  # The size of the feature map grid (8x8)
-        num_anchors = 5  
+        grid_size1 = 8  # The size of the feature map grid (8x8)
+        grid_size2 = 16
+        grid_size3 = 32
+
+        num_anchors = 3 
         num_classes = 2
         
        # Initialize ground truth array
-        bboxes = np.zeros((num_anchors, grid_size, grid_size, 6), dtype=np.float32)
+        bboxes1 = np.zeros((num_anchors, grid_size1, grid_size1, 5+num_classes), dtype=np.float32)
+        bboxes2 = np.zeros((num_anchors, grid_size2, grid_size2, 5+num_classes), dtype=np.float32)
+        bboxes3 = np.zeros((num_anchors, grid_size3, grid_size3, 5+num_classes), dtype=np.float32)
         
         if bbox is not None:
             scale_x = new_width / original_width
@@ -207,21 +212,44 @@ class Data(Dataset):
             # print(bbox_width)
 
             # Map normalized coordinates to grid cell
-            grid_x = int(center_x * grid_size)
-            grid_y = int(center_y * grid_size)
+            grid_x1 = int(center_x * grid_size1)
+            grid_y1 = int(center_y * grid_size1)
+            grid_x2 = int(center_x * grid_size2)
+            grid_y2 = int(center_y * grid_size2)
+            grid_x3 = int(center_x * grid_size3)
+            grid_y3 = int(center_y * grid_size3)
 
-            if 0 <= grid_x < grid_size and 0 <= grid_y < grid_size:
+            if 0 <= grid_x1 < grid_size1 and 0 <= grid_y1 < grid_size1:
                 # Create the ground truth entry for the first anchor box
-                bboxes[0, grid_y, grid_x] = [
+                bboxes1[0, grid_y1, grid_x1] = [
                     center_x,    # Center x (normalized to grid cell size)
                     center_y,    # Center y (normalized to grid cell size)
                     bbox_width,  # Width (normalized)
                     bbox_height, # Height (normalized)
                     1.0,         # Objectness score
-                    class_out    # Class index
-                ]
+                ] + [1 if i == class_out else 0 for i in range(num_classes)]
+
+            if 0 <= grid_x2 < grid_size2 and 0 <= grid_y2 < grid_size2:
+                # Create the ground truth entry for the first anchor box
+                bboxes2[0, grid_y2, grid_x2] = [
+                    center_x,    # Center x (normalized to grid cell size)
+                    center_y,    # Center y (normalized to grid cell size)
+                    bbox_width,  # Width (normalized)
+                    bbox_height, # Height (normalized)
+                    1.0,         # Objectness score
+                ] + [1 if i == class_out else 0 for i in range(num_classes)]
+
+            if 0 <= grid_x3 < grid_size3 and 0 <= grid_y3 < grid_size3:
+                # Create the ground truth entry for the first anchor box
+                bboxes3[0, grid_y3, grid_x3] = [
+                    center_x,    # Center x (normalized to grid cell size)
+                    center_y,    # Center y (normalized to grid cell size)
+                    bbox_width,  # Width (normalized)
+                    bbox_height, # Height (normalized)
+                    1.0,         # Objectness score
+                ] + [1 if i == class_out else 0 for i in range(num_classes)]
             
-        return padded_image, bboxes
+        return padded_image, [bboxes3,bboxes2,bboxes1]
 
 
     # def plot_image_with_bbox(self, image: np.ndarray, bbox: Tuple[int, int, int, int]) -> None:

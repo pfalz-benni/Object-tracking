@@ -17,14 +17,19 @@ def train_epoch(model, train_loader, criterion, optimizer, args):
     for i, data in enumerate(train_loader):
         image, target = data
         output = model(image.to(args.device))
-        target = target.to(args.device).to(torch.float32)
+        # target = target.to(args.device).to(torch.float32)
+
+        # print(i)
+
+        # loss_val, box_l, obj_l, class_l  = criterion(output[0], target[0])
         loss_val = torch.zeros((1), dtype=torch.float, device=args.device)
-        loss_val, box_l, obj_l, class_l  = criterion(output, target)
+
+        loss_val = criterion(output[0], target[0])
         optimizer.zero_grad()
         loss_val.backward()
         optimizer.step()
         total_loss += loss_val.item()
-    return model, total_loss / len(train_loader), total_iou/len(train_loader), box_l.item(), obj_l.item(), class_l.item()
+    return model, total_loss / len(train_loader), total_iou/len(train_loader)
 
 def validate_epoch(model, val_loader, criterion, args):
 
@@ -34,11 +39,13 @@ def validate_epoch(model, val_loader, criterion, args):
     for i, data in enumerate(val_loader):
         image, target = data
         output = model(image.to(args.device))
-        target = target.to(args.device).to(torch.float32)
+        # target = target.to(args.device).to(torch.float32)
 
         loss = torch.zeros((1), dtype=torch.float, device=args.device)
         
-        loss, box_l, obj_l, class_l = criterion(output, target)
+        # loss, box_l, obj_l, class_l = criterion(output, target)
+        loss = criterion(output[0], target[0])
+
         loss.backward()
         total_loss += loss.item()
 
@@ -49,7 +56,7 @@ def validate_epoch(model, val_loader, criterion, args):
 
         # # Visualize the first image in the batch
         # visualize(inputs_np[0], output_np[0], targets_np[0])
-    return total_loss / len(val_loader), total_iou/len(val_loader), box_l.item(), obj_l.item(), class_l.item()
+    return total_loss / len(val_loader), total_iou/len(val_loader)
 
 def visualize(image, predicted_bbox, true_bbox):
     # Assuming image, predicted_bbox, true_bbox are numpy arrays

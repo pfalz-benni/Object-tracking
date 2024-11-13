@@ -113,7 +113,8 @@ class Detect(nn.Module):
                     y = torch.cat((xy, wh, conf), 4)
                 z.append(y.view(bs, self.na * nx * ny, self.no))
 
-        return x if self.training else (torch.cat(z, 1),) if self.export else (torch.cat(z, 1), x)
+        # return x if self.training else (torch.cat(z, 1),) if self.export else (torch.cat(z, 1), x)
+        return x
 
     def _make_grid(self, nx=20, ny=20, i=0, torch_1_10=check_version(torch.__version__, "1.10.0")):
         """Generates a mesh grid for anchor boxes with optional compatibility for torch versions < 1.10."""
@@ -218,14 +219,7 @@ class BaseModel(nn.Module):
 class DetectionModel(BaseModel):
     """YOLOv5 detection model class for object detection tasks, supporting custom configurations and anchors."""
 
-    def __init__(self, cfg="yolov5s.yaml", ch=3, nc=2,
-                    anchors=( 
-                        (83.2,  52.7),
-                        (245.0, 96.0),
-                        (56.9, 74.8),
-                        (54.4,  26.0),
-                        (77.74,  70.0),
-                    )):
+    def __init__(self, cfg="yolov5s.yaml", ch=3, nc=None, anchors=None):
         """Initializes YOLOv5 model with configuration file, input channels, number of classes, and custom anchors."""
         super().__init__()
         if isinstance(cfg, dict):
@@ -244,8 +238,7 @@ class DetectionModel(BaseModel):
             self.yaml["nc"] = nc  # override yaml value
         if anchors:
             LOGGER.info(f"Overriding model.yaml anchors with anchors={anchors}")
-            # self.yaml["anchors"] = round(anchors)  # override yaml value
-            self.yaml["anchors"] = anchors  # override yaml value
+            self.yaml["anchors"] = round(anchors)  # override yaml value
         self.model, self.save = parse_model(deepcopy(self.yaml), ch=[ch])  # model, savelist
         self.names = [str(i) for i in range(self.yaml["nc"])]  # default names
         self.inplace = self.yaml.get("inplace", True)

@@ -21,12 +21,12 @@ from models.yolo import Model
 def train(model, train_loader, val_loader, criterion, optimizer, args):
     best_val_loss = float("inf")
     for epoch in range(args.num_epochs):
-        model, train_loss, train_acc, box_l, conf_l, class_l = train_epoch(model, train_loader, criterion, optimizer, args)
+        model, train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, args)
         mlflow.log_metric("train_loss", train_loss, step=epoch)
         mlflow.log_metric("train_acc", train_acc, step=epoch)
 
         if args.val_interval > 0 and (epoch + 1) % args.val_interval == 0:
-            val_loss, val_acc, box_v, conf_v, class_v = validate_epoch(model, val_loader, criterion, args)
+            val_loss, val_acc = validate_epoch(model, val_loader, criterion, args)
 
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
@@ -35,12 +35,12 @@ def train(model, train_loader, val_loader, criterion, optimizer, args):
                             f"model_best_ep{epoch}_val_loss_{val_loss:.4f}.pth"))
                 top_k_checkpoints(args, mlflow.get_artifact_uri())
 
-            print(f"[Validation] at Epoch {epoch+1}/{args.num_epochs}: Val Loss: {val_loss:.4f}, box_v:{box_v:.4f}, conf_v:{conf_v:.4f}, class_v:{class_v:.4f}")
+            print(f"[Validation] at Epoch {epoch+1}/{args.num_epochs}: Val Loss: {val_loss:.4f}")
             mlflow.log_metric("val_loss", val_loss, step=epoch)
             mlflow.log_metric("val_acc", val_acc, step=epoch)
         torch.cuda.empty_cache()
         # Print progress
-        print(f"Epoch {epoch+1}/{args.num_epochs}: Train Loss: {train_loss:.4f}, box_l:{box_l:.4f}, conf_l:{conf_l:.4f}, class_l:{class_l:.4f}")
+        print(f"Epoch {epoch+1}/{args.num_epochs}: Train Loss: {train_loss:.4f}")
     return model
 
 
@@ -74,8 +74,7 @@ def main(args):
 
         if args.architecture == "YOLOv5n":
             # Use specified newer YOLO model
-            model = Model('/Users/benediktwitteler/Code/Python/NeuromorphicHackathon/Object-tracking/models/yolov5n.yaml').to('mps')
-
+            model = Model(os.path.join('models', 'yolov5n.yaml')).to(args.device)
 
             # # Only train last layer (for nano n version number 23)
             # for name, param in model.model.named_parameters():

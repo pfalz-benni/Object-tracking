@@ -1,11 +1,11 @@
 {
-    "device": "mps",
+    "device": "cpu",
     "mlflow_path": "./mlruns",
     "experiment_name": "exp_12nov",
     "run_name": "1",
     "architecture": "YOLOv5n",
     "lr": 0.001,
-    "num_epochs": 50,
+    "num_epochs": 2,
     "batch_size": 4,
     "val_interval": 2,
     "save_k_best": 2,
