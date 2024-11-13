@@ -218,7 +218,14 @@ class BaseModel(nn.Module):
 class DetectionModel(BaseModel):
     """YOLOv5 detection model class for object detection tasks, supporting custom configurations and anchors."""
 
-    def __init__(self, cfg="yolov5s.yaml", ch=3, nc=None, anchors=None):
+    def __init__(self, cfg="yolov5s.yaml", ch=3, nc=2,
+                    anchors=( 
+                        (83.2,  52.7),
+                        (245.0, 96.0),
+                        (56.9, 74.8),
+                        (54.4,  26.0),
+                        (77.74,  70.0),
+                    )):
         """Initializes YOLOv5 model with configuration file, input channels, number of classes, and custom anchors."""
         super().__init__()
         if isinstance(cfg, dict):
@@ -237,7 +244,8 @@ class DetectionModel(BaseModel):
             self.yaml["nc"] = nc  # override yaml value
         if anchors:
             LOGGER.info(f"Overriding model.yaml anchors with anchors={anchors}")
-            self.yaml["anchors"] = round(anchors)  # override yaml value
+            # self.yaml["anchors"] = round(anchors)  # override yaml value
+            self.yaml["anchors"] = anchors  # override yaml value
         self.model, self.save = parse_model(deepcopy(self.yaml), ch=[ch])  # model, savelist
         self.names = [str(i) for i in range(self.yaml["nc"])]  # default names
         self.inplace = self.yaml.get("inplace", True)
