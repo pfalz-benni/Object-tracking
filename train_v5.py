@@ -1,7 +1,11 @@
-from ultralytics import YOLO
+# from ultralytics import YOLO
 import torch
+import os
 
-model = YOLO('yolov5nu.pt') 
+from models.yolo import Model
+
+# model = YOLO('yolov5nu.pt') 
+model = Model(os.path.join('models', 'yolov5n.yaml'))
 
 # Train the model
 model.train(
