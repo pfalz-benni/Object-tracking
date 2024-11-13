@@ -14,6 +14,8 @@ import os
 import urllib.request
 import numpy as np
 
+from models.yolo import Model
+
 
 
 def train(model, train_loader, val_loader, criterion, optimizer, args):
@@ -70,32 +72,47 @@ def main(args):
         with open(os.path.join(mlflow.get_artifact_uri(), "args.json"), 'w') as f:
             json.dump(vars(args), f)
 
-        model = eval(args.architecture)(args).to(args.device)
+        if args.architecture == "YOLOv5n":
+            # Use specified newer YOLO model
+            model = Model('/Users/benediktwitteler/Code/Python/NeuromorphicHackathon/Object-tracking/models/yolov5n.yaml').to('mps')
 
-        file_path = "yolov2-tiny-voc.weights"
-        url = "https://pjreddie.com/media/files/yolov2-tiny-voc.weights"
 
-        if not os.path.exists(file_path):
-            try:
-                urllib.request.urlretrieve(url, file_path)
-                print(f"Downloaded {file_path} from {url}")
-            except Exception as e:
-                print(f"An error occurred: {e}")
+            # # Only train last layer (for nano n version number 23)
+            # for name, param in model.model.named_parameters():
+            #     # Unfreeze only the parameters in the last layer (e.g., 'head' in YOLO models)
+            #     if 'model.model.23' in name:
+            #         param.requires_grad = True
+            #     else:
+            #         param.requires_grad = False
+
         else:
-            print(f"{file_path} already exists.")
-        load_weights(model)
+            model = eval(args.architecture)(args).to(args.device)
 
-        # Freeze all layers except the last layer
-        for param in model.parameters():
-            param.requires_grad = False
+            # Use initial YOLOv2 model
+            file_path = "yolov2-tiny-voc.weights"
+            url = "https://pjreddie.com/media/files/yolov2-tiny-voc.weights"
 
-        # Unfreeze the last two layers
-        # for param in model.conv7.parameters():
-        #     param.requires_grad = True
-        # for param in model.conv8.parameters():
-        #     param.requires_grad = True
-        for param in model.conv9.parameters():
-            param.requires_grad = True
+            if not os.path.exists(file_path):
+                try:
+                    urllib.request.urlretrieve(url, file_path)
+                    print(f"Downloaded {file_path} from {url}")
+                except Exception as e:
+                    print(f"An error occurred: {e}")
+            else:
+                print(f"{file_path} already exists.")
+            load_weights(model)
+
+            # Freeze all layers except the last layer
+            for param in model.parameters():
+                param.requires_grad = False
+
+            # Unfreeze the last two layers
+            # for param in model.conv7.parameters():
+            #     param.requires_grad = True
+            # for param in model.conv8.parameters():
+            #     param.requires_grad = True
+            for param in model.conv9.parameters():
+                param.requires_grad = True
 
         # Print to verify which layers are trainable
         print("Trainable Parameters:")
@@ -104,7 +121,7 @@ def main(args):
                 print(name)
 
 
-        optimizer = optim.Adam(model.conv9.parameters(), lr=args.lr)
+        optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
         if args.loss == "mse":
             criterion = nn.MSELoss()

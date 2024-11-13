@@ -1,0 +1,12 @@
+numpy
+torch
+torchvision
+opencv-python
+matplotlib
+albumentations
+scikit-learn
+pillow
+torchsummary
+mlflow
+argparse
+urllib3
