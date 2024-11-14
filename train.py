@@ -15,6 +15,7 @@ import urllib.request
 import numpy as np
 
 from models.yolo import Model
+from utils.general import intersect_dicts
 
 
 
@@ -76,13 +77,27 @@ def main(args):
             # Use specified newer YOLO model
             model = Model(os.path.join('models', 'yolov5n.yaml')).to(args.device)
 
-            # # Only train last layer (for nano n version number 23)
-            # for name, param in model.model.named_parameters():
-            #     # Unfreeze only the parameters in the last layer (e.g., 'head' in YOLO models)
-            #     if 'model.model.23' in name:
-            #         param.requires_grad = True
-            #     else:
-            #         param.requires_grad = False
+            # # Load weights
+            # state_dict = torch.load('best.pt', map_location=args.device)
+            # model.load_state_dict(state_dict)
+
+            ckpt = torch.load('best.pt', map_location="cpu")  # load checkpoint to CPU to avoid CUDA memory leak
+            # model = Model(ckpt["model"].yaml, ch=3, nc=2, anchors=hyp.get("anchors")).to(device)  # create
+            model = Model(ckpt["model"].yaml, ch=3, nc=2).to('cpu')  # create
+            # exclude = ["anchor"] if (cfg or hyp.get("anchors")) and not resume else []  # exclude keys
+            exclude = []  # exclude keys
+            csd = ckpt["model"].float().state_dict()  # checkpoint state_dict as FP32
+            csd = intersect_dicts(csd, model.state_dict(), exclude=exclude)  # intersect
+            model.load_state_dict(csd, strict=False)  # load
+            print(f"Transferred {len(csd)}/{len(model.state_dict())} items from loaded weights")
+
+            # Only train last layer (for nano n version number 24)
+            for name, param in model.model.named_parameters():
+                # Unfreeze only the parameters in the last layer (e.g., 'head' in YOLO models)
+                if '24.' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
 
         else:
             model = eval(args.architecture)(args).to(args.device)
