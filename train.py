@@ -81,9 +81,9 @@ def main(args):
             # state_dict = torch.load('best.pt', map_location=args.device)
             # model.load_state_dict(state_dict)
 
-            ckpt = torch.load('best.pt', map_location="cpu")  # load checkpoint to CPU to avoid CUDA memory leak
+            ckpt = torch.load('yolov5n.pt', map_location=args.device)  # load checkpoint to CPU to avoid CUDA memory leak
             # model = Model(ckpt["model"].yaml, ch=3, nc=2, anchors=hyp.get("anchors")).to(device)  # create
-            model = Model(ckpt["model"].yaml, ch=3, nc=2).to('cpu')  # create
+            model = Model(ckpt["model"].yaml, ch=3, nc=2).to(args.device)  # create
             # exclude = ["anchor"] if (cfg or hyp.get("anchors")) and not resume else []  # exclude keys
             exclude = []  # exclude keys
             csd = ckpt["model"].float().state_dict()  # checkpoint state_dict as FP32
