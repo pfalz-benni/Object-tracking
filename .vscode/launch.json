@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["--config", "yolo5.json"]
+            "args": ["--config", "yolo5s_dummy.json"]
         }
     ]
 }

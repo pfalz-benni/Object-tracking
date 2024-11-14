@@ -73,15 +73,15 @@ def main(args):
         with open(os.path.join(mlflow.get_artifact_uri(), "args.json"), 'w') as f:
             json.dump(vars(args), f)
 
-        if args.architecture == "YOLOv5n":
+        if "yolov5" in args.architecture:
             # Use specified newer YOLO model
-            model = Model(os.path.join('models', 'yolov5n.yaml')).to(args.device)
+            model = Model(os.path.join('models', args.architecture+'.yaml')).to(args.device)
 
             # # Load weights
             # state_dict = torch.load('best.pt', map_location=args.device)
             # model.load_state_dict(state_dict)
 
-            ckpt = torch.load('yolov5n.pt', map_location=args.device)  # load checkpoint to CPU to avoid CUDA memory leak
+            ckpt = torch.load(args.architecture+'.pt', map_location=args.device)  # load checkpoint to CPU to avoid CUDA memory leak
             # model = Model(ckpt["model"].yaml, ch=3, nc=2, anchors=hyp.get("anchors")).to(device)  # create
             model = Model(ckpt["model"].yaml, ch=3, nc=2).to(args.device)  # create
             # exclude = ["anchor"] if (cfg or hyp.get("anchors")) and not resume else []  # exclude keys
