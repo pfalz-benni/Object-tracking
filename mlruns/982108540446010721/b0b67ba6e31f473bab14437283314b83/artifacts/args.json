@@ -1,0 +1,1 @@
+{"device": "cuda:0", "mlflow_path": "./mlruns", "experiment_name": "exp_12nov", "run_name": "1", "architecture": "yolov5n", "lr": 0.001, "num_epochs": 50, "batch_size": 4, "val_interval": 2, "save_k_best": 2, "loss": "mse", "config_file": "yolo5n_mse.json"}

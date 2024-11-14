@@ -1,5 +1,5 @@
 {
     "device": "cuda:0",
-    "architecture": "TinyYOLOv2",
+    "architecture": "yolov5n",
     "batch_size": 1
 }
