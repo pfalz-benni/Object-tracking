@@ -94,7 +94,7 @@ def main(args):
             # Only train last layer (for nano n version number 24)
             for name, param in model.model.named_parameters():
                 # Unfreeze only the parameters in the last layer (e.g., 'head' in YOLO models)
-                if '24.' in name:
+                if '24.' in name or '23.' in name or '22.' in name or '21.' in name:
                     param.requires_grad = True
                 else:
                     param.requires_grad = False
