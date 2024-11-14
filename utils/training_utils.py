@@ -8,18 +8,22 @@ import string
 import random
 import torch.nn as nn
 
+import tqdm
+
 
 def train_epoch(model, train_loader, criterion, optimizer, args):
     model.train()
     total_loss = 0.0
     total_iou = 0.0
     args = args
-    for i, data in enumerate(train_loader):
+    # for i, data in enumerate(train_loader):
+    for i, data in enumerate(tqdm.tqdm(train_loader, desc="Training Progress", unit="batch")):
+
         image, target = data
         output = model(image.to(args.device))
         target0 = target[0].to(args.device).to(torch.float32)
 
-        # print(i, end=' ')
+        print(i, end=' ')
 
         # loss_val, box_l, obj_l, class_l  = criterion(output[0], target[0])
         loss_val = torch.zeros((1), dtype=torch.float, device=args.device)
