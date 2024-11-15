@@ -1,0 +1,15 @@
+artifact_uri: /home/kannan/neuroTUM/github/Object-tracking/mlruns/982108540446010721/f62bc30bb882456b9e4919746ced17f3/artifacts
+end_time: 1731608979584
+entry_point_name: ''
+experiment_id: '982108540446010721'
+lifecycle_stage: active
+run_id: f62bc30bb882456b9e4919746ced17f3
+run_name: '1'
+run_uuid: f62bc30bb882456b9e4919746ced17f3
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1731608379223
+status: 3
+tags: []
+user_id: kannan
