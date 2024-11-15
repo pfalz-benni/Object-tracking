@@ -139,7 +139,7 @@ class Data(Dataset):
         image_paths = glob.glob(os.path.join(folder_path, '*.png'))
         return sorted(image_paths)
 
-    def resize_image_and_bounding_box_with_padding(self, image: np.ndarray, bbox: Tuple, class_out,  new_size: Tuple[int, int], num_bboxes=1) -> Tuple[np.ndarray, Tuple]:
+    def resize_image_and_bounding_box_with_padding(self, image: np.ndarray, bbox: Tuple, class_out, new_size: Tuple[int, int], num_bboxes=3) -> Tuple[np.ndarray, List[np.ndarray]]:
         original_height, original_width = image.shape[:2]
         target_width, target_height = new_size
 
@@ -170,18 +170,16 @@ class Data(Dataset):
             value=(0, 0, 0)  # Padding color: black
         )
 
-        grid_size1 = 8  # The size of the feature map grid (8x8)
-        grid_size2 = 16
-        grid_size3 = 32
-
-        num_anchors = 3 
+        # Define feature map grid sizes
+        grid_sizes = [8, 16, 32]  # Add the new feature spaces here
         num_classes = 2
-        
-       # Initialize ground truth array
-        bboxes1 = np.zeros((num_anchors, grid_size1, grid_size1, 5+num_classes), dtype=np.float32)
-        bboxes2 = np.zeros((num_anchors, grid_size2, grid_size2, 5+num_classes), dtype=np.float32)
-        bboxes3 = np.zeros((num_anchors, grid_size3, grid_size3, 5+num_classes), dtype=np.float32)
-        
+
+        # Initialize ground truth arrays for each feature map
+        bboxes_list = []
+        for grid_size in grid_sizes:
+            bboxes = np.zeros((num_bboxes, grid_size, grid_size, 5 + num_classes), dtype=np.float32)
+            bboxes_list.append(bboxes)
+
         if bbox is not None:
             scale_x = new_width / original_width
             scale_y = new_height / original_height
@@ -193,66 +191,31 @@ class Data(Dataset):
             x_max_resized = (x_max * scale_x) + pad_left
             y_max_resized = (y_max * scale_y) + pad_top
 
-            # Clip bounding box coordinates to be within the valid range [0, 1]
             bbox_width = min(max(x_max_resized - x_min_resized, 0), target_width)
             bbox_height = min(max(y_max_resized - y_min_resized, 0), target_height)
             center_x = min(max((x_min_resized + x_max_resized) / 2, 0), target_width)
             center_y = min(max((y_min_resized + y_max_resized) / 2, 0), target_height)
-            # bbox_width = x_max_resized - x_min_resized
-            # bbox_height = y_max_resized - y_min_resized
-            # center_x = (x_min_resized + x_max_resized) / 2
-            # center_y = (y_min_resized + y_max_resized) / 2
 
-            # Normalize bounding box coordinates to the grid size
-            center_x /= target_width
-            center_y /= target_height
-            bbox_width /= target_width
-            bbox_height /= target_height
-            # print(bbox_height)
-            # print(bbox_width)
+            # Normalize bounding box coordinates and assign to feature maps
+            for i, grid_size in enumerate(grid_sizes):
+                grid_x = int(center_x / target_width * grid_size)
+                grid_y = int(center_y / target_height * grid_size)
 
-            # Map normalized coordinates to grid cell
-            grid_x1 = int(center_x * grid_size1)
-            grid_y1 = int(center_y * grid_size1)
-            grid_x2 = int(center_x * grid_size2)
-            grid_y2 = int(center_y * grid_size2)
-            grid_x3 = int(center_x * grid_size3)
-            grid_y3 = int(center_y * grid_size3)
+                if 0 <= grid_x < grid_size and 0 <= grid_y < grid_size:
+                    bboxes_list[i][0, grid_y, grid_x] = [
+                        center_x / target_width,
+                        center_y / target_height,
+                        bbox_width / target_width,
+                        bbox_height / target_height,
+                        1.0  # Objectness score
+                    ] + [1 if j == class_out else 0 for j in range(num_classes)]
 
-            if 0 <= grid_x1 < grid_size1 and 0 <= grid_y1 < grid_size1:
-                # Create the ground truth entry for the first anchor box
-                bboxes1[0, grid_y1, grid_x1] = [
-                    center_x,    # Center x (normalized to grid cell size)
-                    center_y,    # Center y (normalized to grid cell size)
-                    bbox_width,  # Width (normalized)
-                    bbox_height, # Height (normalized)
-                    1.0,         # Objectness score
-                ] + [1 if i == class_out else 0 for i in range(num_classes)]
-
-            if 0 <= grid_x2 < grid_size2 and 0 <= grid_y2 < grid_size2:
-                # Create the ground truth entry for the first anchor box
-                bboxes2[0, grid_y2, grid_x2] = [
-                    center_x,    # Center x (normalized to grid cell size)
-                    center_y,    # Center y (normalized to grid cell size)
-                    bbox_width,  # Width (normalized)
-                    bbox_height, # Height (normalized)
-                    1.0,         # Objectness score
-                ] + [1 if i == class_out else 0 for i in range(num_classes)]
-
-            if 0 <= grid_x3 < grid_size3 and 0 <= grid_y3 < grid_size3:
-                # Create the ground truth entry for the first anchor box
-                bboxes3[0, grid_y3, grid_x3] = [
-                    center_x,    # Center x (normalized to grid cell size)
-                    center_y,    # Center y (normalized to grid cell size)
-                    bbox_width,  # Width (normalized)
-                    bbox_height, # Height (normalized)
-                    1.0,         # Objectness score
-                ] + [1 if i == class_out else 0 for i in range(num_classes)]
-            
-        return padded_image, [bboxes3,bboxes2,bboxes1]
+        return padded_image, bboxes_list
 
 
-    # def plot_image_with_bbox(self, image: np.ndarray, bbox: Tuple[int, int, int, int]) -> None:
+
+
+    #def plot_image_with_bbox(self, image: np.ndarray, bbox: Tuple[int, int, int, int]) -> None:
     #     x_min, y_min, x_max, y_max = bbox
     #     width = x_max - x_min
     #     height = y_max - y_min
@@ -269,7 +232,7 @@ def visualize_event_data_with_labels(dataloader, num_samples=5):
 
         # Convert the PyTorch tensor back to a NumPy array for visualization
         image_np = images[0].numpy().transpose(1, 2, 0)  # Get first sample in the batch and format it for plotting
-        bboxes = labels[0]  # Get corresponding labels (bounding boxes and classes)
+        bboxes = labels[0][0]  # Get corresponding labels (bounding boxes and classes)
 
         # Plot the image with the bounding boxes
         plt.figure(figsize=(10, 10))
@@ -280,7 +243,6 @@ def visualize_event_data_with_labels(dataloader, num_samples=5):
             for x in range(grid_size):
                 bbox = bboxes[0, y, x]  # Extract anchor box info (first anchor in this example)
                 if bbox[4] > 0.5:  # Objectness score threshold
-                    # Convert normalized bbox coordinates to pixel space
                     center_x = bbox[0] * 256
                     center_y = bbox[1] * 256
                     width = bbox[2] * 256
@@ -303,18 +265,20 @@ def visualize_event_data_with_labels(dataloader, num_samples=5):
 
         plt.show()
 
-# # Initialize the datasets for train, validation, and test
-# train_dataset = Data(split="train")
-# valid_dataset = Data(split="valid")
-# test_dataset = Data(split="test")
+ # Initialize the datasets for train, validation, and test
+train_dataset = Data(split="train")
+valid_dataset = Data(split="valid")
+test_dataset = Data(split="test")
 
-# # Create data loaders
-# train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True)
-# valid_loader = DataLoader(valid_dataset, batch_size=2, shuffle=True)
-# test_loader = DataLoader(test_dataset, batch_size=2, shuffle=False)
-# visualize_event_data_with_labels(train_loader, num_samples=80)
-# # # Example usage: Print shape of images and labels in the train set
-# # for i, (image, target) in enumerate(train_loader):
-# #     print(image.size(), target.size())
-# #     # if i == 5:  # Limit output for demonstration purposes
-# #     #     break
+  # Create data loaders
+train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True)
+valid_loader = DataLoader(valid_dataset, batch_size=2, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=2, shuffle=False)
+visualize_event_data_with_labels(train_loader, num_samples=20)
+# # Example usage: Print shape of images and labels in the train set
+for i, (image, target) in enumerate(train_loader):
+    print(f"{target[2][0][0][0][0]}")
+    print(f"{target[1][0][0][0][0]}")
+    print(f"{target[0][0][0][0][0]}")
+    if i == 5:  # Limit output for demonstration purposes
+        break
